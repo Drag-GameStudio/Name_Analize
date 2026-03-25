@@ -27,4 +27,6 @@ jobs:
       - name: Run Script
         env:
           GH_MODEL_API_KEYS: ${{ steps.get_token.outputs.token }}
+          GOOGLE_EMBEDDING_API_KEY: ${{ secrets.GOOGLE_EMBEDDING_API_KEY }}
+
         run: python -m autodocgenerator.auto_runner.run_file
