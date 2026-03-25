@@ -1,28 +1,53 @@
-on: [workflow_dispatch]
+name: AI Token & Model Test
+
+on:
+  workflow_dispatch: # Позволяет запускать вручную кнопкой в Actions
+
 jobs:
-  ai-processing:
+  check-access:
     runs-on: ubuntu-latest
-    permissions:
-      models: read
-      contents: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4  
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5 
-        with:
-          python-version: '3.12'
-
-      - name: Install adg
-        run: pip install autodocgenerator
-      - name: Generate AI Token
+      - name: Generate Token
         id: get_token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.YOUR_APP_ID }} # Секреты нужно будет добавить один раз
+          app-id: ${{ secrets.YOUR_APP_ID }}
           private-key: ${{ secrets.YOUR_APP_PRIVATE_KEY }}
-      - name: Run Script
-        run: echo "${{ steps.generate-token.outputs.token }}" | base64
+
+      - name: 1. Check Token Scopes (GitHub API)
+        run: |
+          echo "Checking what this token can do..."
+          # Запрашиваем метаданные токена. В заголовках X-Accepted-GitHub-Permissions 
+          # должно быть видно 'models'
+          curl -I -H "Authorization: Bearer ${{ steps.get_token.outputs.token }}" \
+               https://api.github.com/app/installations/${{ steps.get_token.outputs.installation-id }}
+
+      - name: 2. Check Available Models
+        run: |
+          echo "Fetching available models list from Azure/GitHub..."
+          # Если этот запрос вернет 401/403 — значит права 'Models' не активны
+          curl -s -X GET "https://models.inference.ai.azure.com/models" \
+               -H "Authorization: Bearer ${{ steps.get_token.outputs.token }}" | jq .
+
+      - name: 3. Test Chat Completion (GPT-4o-mini)
+        run: |
+          echo "Sending test prompt to gpt-4o-mini..."
+          # Чистый запрос через curl, чтобы проверить авторизацию
+          RESPONSE=$(curl -s -X POST "https://models.inference.ai.azure.com/chat/completions" \
+               -H "Content-Type: application/json" \
+               -H "Authorization: Bearer ${{ steps.get_token.outputs.token }}" \
+               -d '{
+                 "messages": [{"role": "user", "content": "Say Hello!"}],
+                 "model": "gpt-4o-mini",
+                 "temperature": 0.5
+               }')
+          
+          echo "Response: $RESPONSE"
+          
+          # Простая проверка на ошибку в ответе
+          if [[ $RESPONSE == *"error"* ]]; then
+            echo "FAILED: AI model returned an error."
+            exit 1
+          else
+            echo "SUCCESS: Token works with GitHub Models!"
+          fi
