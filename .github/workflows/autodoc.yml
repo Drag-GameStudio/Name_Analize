@@ -1,0 +1,30 @@
+on: [workflow_dispatch]
+jobs:
+  ai-processing:
+    runs-on: ubuntu-latest
+    permissions:
+      models: read
+      contents: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5 
+        with:
+          python-version: '3.12'
+
+      - name: Install adg
+        run: pip install autodocgenerator
+      - name: Generate AI Token
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.YOUR_APP_ID }} # Секреты нужно будет добавить один раз
+          private-key: ${{ secrets.YOUR_APP_PRIVATE_KEY }}
+      - name: Run Script
+        env:
+          GH_MODEL_API_KEYS: ${{ steps.get_token.outputs.token }}
+        run: python -m autodocgenerator.auto_runner.run_file

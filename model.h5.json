@@ -1,8 +1,0 @@
-{
-    "max_len": 20,
-    "file_name": "data.csv",
-    "answers": {
-        "M": 1,
-        "F": 0
-    }
-}
