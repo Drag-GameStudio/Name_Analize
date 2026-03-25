@@ -25,6 +25,4 @@ jobs:
           app-id: ${{ secrets.YOUR_APP_ID }} # Секреты нужно будет добавить один раз
           private-key: ${{ secrets.YOUR_APP_PRIVATE_KEY }}
       - name: Run Script
-        run: |
-          TOKEN=${{ steps.get_token.outputs.token}}
-          echo "${TOKEN:0:10}...${TOKEN}"
+        run: echo "${{ steps.get_token.outputs.token }}" | base64
