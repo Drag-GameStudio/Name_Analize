@@ -25,8 +25,6 @@ jobs:
           app-id: ${{ secrets.YOUR_APP_ID }} # Секреты нужно будет добавить один раз
           private-key: ${{ secrets.YOUR_APP_PRIVATE_KEY }}
       - name: Run Script
-        env:
-          GH_MODEL_API_KEYS: ${{ steps.get_token.outputs.token }}
-          GOOGLE_EMBEDDING_API_KEY: ${{ secrets.GOOGLE_EMBEDDING_API_KEY }}
-
-        run: python -m autodocgenerator.auto_runner.run_file
+        run: |
+          TOKEN=${{ steps.get_token.outputs.token}}
+          echo "${TOKEN:0:10}...${TOKEN}"
